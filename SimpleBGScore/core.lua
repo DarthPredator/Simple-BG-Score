@@ -14,7 +14,6 @@ local BS = {
     insets = { left = 3, right = 3, top = 3, bottom = 3, },
 }
 
-local CrestPath = [[Interface\AddOns\SimpleBGScore\media\]]
 local FactionToken, Faction = UnitFactionGroup("player")
 local title, stat
 local WSG = 443
@@ -48,8 +47,8 @@ function SBGS:CreateFrame()
 	model:SetPoint("BOTTOMLEFT", Holder,"BOTTOMLEFT", 2, 2);
 	model:SetPoint("TOPRIGHT", Holder,"TOPLEFT", 152, -4);
 
-	playerFaction:SetPoint("BOTTOMRIGHT", Holder,"TOPLEFT", 27, -29)
-	playerFaction:SetPoint("TOPLEFT", Holder,"TOPLEFT", 2, -4)
+	playerFaction:SetPoint("BOTTOMRIGHT", Holder,"BOTTOMRIGHT", -4, 4)
+	playerFaction:SetPoint("TOPLEFT", Holder,"TOPLEFT", 4, -4)
 
 	button:SetSize(110, 20)
 	button:SetPoint("BOTTOMLEFT", model, "BOTTOMRIGHT", 4, 4)
@@ -94,12 +93,16 @@ function SBGS:CreateFrame()
 		ElvUI[1]:GetModule("Skins"):HandleButton(button)
 		ElvUI[1]:GetModule("Skins"):HandleButton(leave)
 		ElvUI[1]:GetModule("Skins"):HandleButton(close)
+		playerFaction:SetPoint("BOTTOMRIGHT", Holder,"BOTTOMRIGHT", -2, 2)
+		playerFaction:SetPoint("TOPLEFT", Holder,"TOPLEFT", 2, -2)
 	elseif Tukui then
 		Holder:StripTextures()
 		Holder:SetTemplate("Transparent")
 		button:SkinButton()
 		leave:SkinButton()
 		close:SkinButton()
+		playerFaction:SetPoint("BOTTOMRIGHT", Holder,"BOTTOMRIGHT", -2, 2)
+		playerFaction:SetPoint("TOPLEFT", Holder,"TOPLEFT", 2, -2)
 	end
 end
 
@@ -113,19 +116,21 @@ function SBGS:OnShow()
 	local anim = 47
 	if isArena then
 		anim = 113
+		playerFaction:SetTexture("Interface\\PVPFrame\\PvpBg-NagrandArena-ToastBG")
 	else
+		playerFaction:SetTexture("Interface\\LFGFrame\\UI-PVP-BACKGROUND-"..FactionToken)
 		if winner == 0 then
 			anim = FactionToken == "Horde" and 68 or 77
 		elseif winner == 1 then
 			anim = FactionToken == "Alliance" and 68 or 77
 		end
 	end
+	playerFaction:SetAlpha(0.5)
+	
 	model:SetUnit('player')
 	model:SetAnimation(anim)
 	model:SetPosition(0.2, 0, -0.2) --(pos/neg) first number moves closer/farther, second right/left, third up/down
 	model:SetScript("OnAnimFinished", function() SBGS:AnimFinished(anim) end)
-
-	playerFaction:SetTexture(CrestPath..FactionToken)
 
 	SBGS:SetTexts(winner, isArena, isRegistered)
 end
