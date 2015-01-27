@@ -110,6 +110,12 @@ function SBGS:AnimFinished(anim)
 	model:SetAnimation(anim)
 end
 
+function SBGS:OnEvent()
+	local winner = GetBattlefieldWinner()
+	local isArena, isRegistered = IsActiveBattlefieldArena()
+	SBGS:SetTexts(winner, isArena, isRegistered)
+end
+
 function SBGS:OnShow()
 	local winner = GetBattlefieldWinner()
 	local isArena, isRegistered = IsActiveBattlefieldArena()
@@ -308,7 +314,7 @@ function SBGS:OnInitialize()
 	end)
 	WorldStateScoreFrame:HookScript("OnHide", function() SBGSFullButton.pushed = false end)
 
-	self:RegisterEvent('UPDATE_BATTLEFIELD_SCORE', SBGS.SetTexts)
+	self:RegisterEvent('UPDATE_BATTLEFIELD_SCORE', SBGS.OnEvent)
 	hooksecurefunc("LeaveBattlefield", function() Holder:Hide() end)
 
 	--Enabling dragging around
