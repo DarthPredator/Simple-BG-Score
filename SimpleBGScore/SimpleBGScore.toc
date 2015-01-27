@@ -4,7 +4,6 @@
 ## Notes-ruRU: Упрощенная статитика поля боя
 ## Author: Darth Predator
 ## Version: 1.0
-## SavedVariables: SBGSDB
 ## OptionalDeps: ElvUI, Tukui
 ## X-Embeds: Ace3
 
