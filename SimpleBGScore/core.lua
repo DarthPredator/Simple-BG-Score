@@ -273,8 +273,12 @@ function SBGS:OnInitialize()
 	title.text:SetText(format(STAT_TEMPLATE, myName))
 	for i = 1, 22 do
 		stat = CreateFrame("Frame", "SBGSText"..i, Holder)
-		stat:SetSize(120, 20)
-		-- stat:CreateBackdrop()
+		if i < 12 then
+			stat:SetSize(140, 20)
+		else
+			stat:SetSize(100, 20)
+		end
+		stat:CreateBackdrop()
 		if i == 1 then
 			stat:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -2)
 		elseif i == 12 then
