@@ -168,12 +168,12 @@ function SBGS:SetTextBG(winner)
 	for index=1, GetNumBattlefieldScores() do
 		name = GetBattlefieldScore(index)
 		if name == myName then
-				SBGSText13.text:SetText(select(3, GetBattlefieldScore(index)))
-				SBGSText14.text:SetText(select(4, GetBattlefieldScore(index)))
-				SBGSText15.text:SetText(select(2, GetBattlefieldScore(index)))
-				SBGSText16.text:SetText(select(10, GetBattlefieldScore(index)))
-				SBGSText17.text:SetText(select(11, GetBattlefieldScore(index)))
-				SBGSText18.text:SetText(select(5, GetBattlefieldScore(index)))
+				SBGSText13.text:SetText(select(3, GetBattlefieldScore(index))) --Honor kills
+				SBGSText14.text:SetText(select(2, GetBattlefieldScore(index))) --Killing blows
+				SBGSText15.text:SetText(select(4, GetBattlefieldScore(index))) --Deathes
+				SBGSText16.text:SetText(select(10, GetBattlefieldScore(index))) --Damage
+				SBGSText17.text:SetText(select(11, GetBattlefieldScore(index))) --Healing
+				SBGSText18.text:SetText(select(5, GetBattlefieldScore(index))) --Honor
 				--Mechanics texts
 				SBGSText8.text:SetText(GetBattlefieldStatInfo(1)..":")
 				SBGSText19.text:SetText(GetBattlefieldStatData(index, 1))
@@ -278,7 +278,7 @@ function SBGS:OnInitialize()
 		else
 			stat:SetSize(100, 20)
 		end
-		stat:CreateBackdrop()
+		-- stat:CreateBackdrop()
 		if i == 1 then
 			stat:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -2)
 		elseif i == 12 then
