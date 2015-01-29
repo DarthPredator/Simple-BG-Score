@@ -9,3 +9,7 @@
 
 libs/load_libs.xml
 core.lua
+ 
+ 
+## X-Tukui-ProjectID: 263
+## X-Tukui-ProjectFolders: SimpleBGScore
