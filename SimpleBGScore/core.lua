@@ -33,6 +33,7 @@ local GetBattlefieldScore, GetBattlefieldStatInfo, GetBattlefieldStatData, GetBa
 local NormText = "Interface/Buttons/UI-Panel-Button-Up"
 local HighText = "Interface/Buttons/UI-Panel-Button-Highlight"
 local InProcessText = "|cffff8800"..WINTERGRASP_IN_PROGRESS.."|r"
+local tostring = tostring
 
 function SBGS:CreateFrame()
 	Holder:SetSize(400, 280)
@@ -116,6 +117,16 @@ function SBGS:OnEvent()
 	SBGS:SetTexts(winner, isArena, isRegistered)
 end
 
+function SBGS:Comma(str)
+	str = tostring(str)   -- now you can feed it numbers instead of strings
+	local prefix, number, suffix = str:match"(%D*%d)(%d+)(%D*)"
+	if prefix and number then
+		return prefix .. number:reverse():gsub("(%d%d%d)","%1,"):reverse() .. suffix
+	else
+		return str
+	end
+end
+
 function SBGS:OnShow()
 	local winner = GetBattlefieldWinner()
 	local isArena, isRegistered = IsActiveBattlefieldArena()
@@ -171,8 +182,8 @@ function SBGS:SetTextBG(winner)
 				SBGSText13.text:SetText(select(3, GetBattlefieldScore(index))) --Honor kills
 				SBGSText14.text:SetText(select(2, GetBattlefieldScore(index))) --Killing blows
 				SBGSText15.text:SetText(select(4, GetBattlefieldScore(index))) --Deathes
-				SBGSText16.text:SetText(select(10, GetBattlefieldScore(index))) --Damage
-				SBGSText17.text:SetText(select(11, GetBattlefieldScore(index))) --Healing
+				SBGSText16.text:SetText(SBGS:Comma(select(10, GetBattlefieldScore(index)))) --Damage
+				SBGSText17.text:SetText(SBGS:Comma(select(11, GetBattlefieldScore(index)))) --Healing
 				SBGSText18.text:SetText(select(5, GetBattlefieldScore(index))) --Honor
 				--Mechanics texts
 				SBGSText8.text:SetText(GetBattlefieldStatInfo(1)..":")
@@ -242,8 +253,8 @@ function SBGS:SetTextArena(winner, isRegistered)
 	for index=1, GetNumBattlefieldScores() do
 		name = GetBattlefieldScore(index)
 		if name == myName then
-			SBGSText13.text:SetText(select(10, GetBattlefieldScore(index)))
-			SBGSText14.text:SetText(select(11, GetBattlefieldScore(index)))
+			SBGSText13.text:SetText(SBGS:Comma(select(10, GetBattlefieldScore(index))))
+			SBGSText14.text:SetText(SBGS:Comma(select(11, GetBattlefieldScore(index))))
 			SBGSText15.text:SetText(select(2, GetBattlefieldScore(index)))
 			if isRegistered then
 				SBGSText16.text:SetText(select(13, GetBattlefieldScore(index)))
