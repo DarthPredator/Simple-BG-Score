@@ -40,7 +40,9 @@ function SBGS:CreateFrame()
 	Holder:SetPoint("CENTER", UIParent, "CENTER", 0, 150)
 	Holder:SetFrameStrata("HIGH")
 	Holder:Hide()
+	Holder.shown = false
 	Holder:SetScript("OnShow", SBGS.OnShow)
+	Holder:SetScript("OnHide", SBGS.OnHide)
 
 	Holder:SetBackdrop(BS)
 	Holder:SetBackdropColor(0, 0, 0, 1)
@@ -150,6 +152,11 @@ function SBGS:OnShow()
 	model:SetScript("OnAnimFinished", function() SBGS:AnimFinished(anim) end)
 
 	SBGS:SetTexts(winner, isArena, isRegistered)
+	Holder.shown = true
+end
+
+function SBGS:OnHide()
+	Holder.shown = false
 end
 
 function SBGS:SetTexts(winner, isArena, isRegistered)
@@ -322,9 +329,12 @@ function SBGS:OnInitialize()
 	WorldStateScoreFrame:HookScript("OnShow", function()
 		inInstance, instanceType = IsInInstance()
 		if not (inInstance and (instanceType == "pvp")) and not (inInstance and (instanceType == "arena")) then return end --Just in case
-		if not SBGSFullButton.pushed then
+		if not SBGSFullButton.pushed and not Holder.shown then
 			HideUIPanel(WorldStateScoreFrame)
 			Holder:Show()
+		elseif not SBGSFullButton.pushed and Holder.shown then
+			HideUIPanel(WorldStateScoreFrame)
+			Holder:Hide()
 		end
 	end)
 	WorldStateScoreFrame:HookScript("OnHide", function() SBGSFullButton.pushed = false end)
