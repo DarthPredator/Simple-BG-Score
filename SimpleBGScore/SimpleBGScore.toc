@@ -3,7 +3,7 @@
 ## Notes: A simplified battleground scoreboard
 ## Notes-ruRU: Упрощенная статитика поля боя
 ## Author: Darth Predator
-## Version: 1.02
+## Version: 1.03
 ## OptionalDeps: ElvUI, Tukui
 ## X-Embeds: Ace3
 
