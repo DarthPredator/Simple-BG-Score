@@ -257,6 +257,7 @@ function SBGS:SetTextArena(winner, isRegistered)
 	SBGSText3.text:SetText(SHOW_COMBAT_HEALING..":")
 	SBGSText4.text:SetText(KILLING_BLOWS..":")
 	SBGSText5.text:SetText(RATING_CHANGE..":")
+
 	for index=1, GetNumBattlefieldScores() do
 		name = GetBattlefieldScore(index)
 		if name == myName then
@@ -268,8 +269,8 @@ function SBGS:SetTextArena(winner, isRegistered)
 			else
 				SBGSText16.text:SetText("0")
 			end
+			break
 		end
-		break
 	end
 
 	leave.text:SetText(LEAVE_ARENA)
@@ -291,8 +292,12 @@ function SBGS:OnInitialize()
 	title.text:SetText(format(STAT_TEMPLATE, myName))
 	for i = 1, 22 do
 		stat = CreateFrame("Frame", "SBGSText"..i, Holder)
-		if i < 12 then
+		if i == 1 then
+			stat:SetSize(80, 20)
+		elseif i >= 1 and i < 12 then
 			stat:SetSize(140, 20)
+		elseif i == 12 then
+			stat:SetSize(160, 20)
 		else
 			stat:SetSize(100, 20)
 		end
@@ -301,6 +306,10 @@ function SBGS:OnInitialize()
 			stat:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -2)
 		elseif i == 12 then
 			stat:SetPoint("LEFT", "SBGSText1", "RIGHT", 2, 0)
+		elseif i == 2 then
+			stat:SetPoint("TOPLEFT", "SBGSText1", "BOTTOMLEFT", 0, 0)
+		elseif i == 13 then
+			stat:SetPoint("LEFT", "SBGSText2", "RIGHT", 2, 0)
 		else
 			stat:SetPoint("TOP", "SBGSText"..(i-1), "BOTTOM", 0, 0)
 		end
