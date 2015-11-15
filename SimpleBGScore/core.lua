@@ -1,12 +1,31 @@
 ﻿local SBGS = LibStub("AceAddon-3.0"):NewAddon("SimpleBGScore", "AceEvent-3.0") --, "AceHook-3.0")
 local AddOnName, Engine = ...;
 
+local _G = _G
+
 local Holder = CreateFrame("Frame", "SBGSHolder", UIParent)
-local model = CreateFrame("PlayerModel", "SBGSModel", Holder);
-local playerFaction = SBGSHolder:CreateTexture(nil, 'ARTWORK')
-local button = CreateFrame("Button", "SBGSFullButton", Holder)
-local leave = CreateFrame("Button", "SBGSLeaveButton", Holder)
-local close = CreateFrame("Button", "SBGSCloseButton", Holder, "UIPanelButtonTemplate")
+
+--functions
+local ShowUIPanel, HideUIPanel = ShowUIPanel, HideUIPanel
+local UnitName = UnitName
+local ConfirmOrLeaveBattlefield = ConfirmOrLeaveBattlefield
+local GetBattlefieldWinner, IsActiveBattlefieldArena = GetBattlefieldWinner, IsActiveBattlefieldArena
+local GetCurrentMapAreaID = GetCurrentMapAreaID
+local IsInInstance = IsInInstance
+local GetNumBattlefieldScores, GetBattlefieldScore, GetBattlefieldStatInfo, GetBattlefieldStatData, GetBattlefieldTeamInfo = GetNumBattlefieldScores, GetBattlefieldScore, GetBattlefieldStatInfo, GetBattlefieldStatData, GetBattlefieldTeamInfo
+local select, format, tostring = select, format, tostring
+--strings
+local RED_FONT_COLOR_CODE = RED_FONT_COLOR_CODE
+local STATUS = STATUS
+local VICTORY_TEXT0, VICTORY_TEXT1 = VICTORY_TEXT0, VICTORY_TEXT1
+local HONORABLE_KILLS, KILLING_BLOWS, DAMAGE, DEATHS, SHOW_COMBAT_HEALING, HONOR = HONORABLE_KILLS, KILLING_BLOWS, DAMAGE, DEATHS, SHOW_COMBAT_HEALING, HONOR
+local LEAVE_BATTLEGROUND, LEAVE_ARENA = LEAVE_BATTLEGROUND, LEAVE_ARENA
+local ARENA_TEAM_NAME_GREEN, ARENA_TEAM_NAME_GOLD, VICTORY_TEXT_ARENA_WINS, VICTORY_TEXT_ARENA_DRAW, RATING_CHANGE
+local STAT_TEMPLATE = STAT_TEMPLATE
+local SHOW, ALL = SHOW, ALL
+local NormText = "Interface/Buttons/UI-Panel-Button-Up"
+local HighText = "Interface/Buttons/UI-Panel-Button-Highlight"
+local InProcessText = "|cffff8800"..WINTERGRASP_IN_PROGRESS.."|r"
 
 local BS = {
     bgFile   = "Interface\\Tooltips\\UI-Tooltip-Background", tile = true, tileSize = 16,
@@ -15,7 +34,6 @@ local BS = {
 }
 
 local FactionToken, Faction = UnitFactionGroup("player")
-local title, stat
 local WSG = 443
 local TP = 626
 local AV = 401
@@ -28,12 +46,6 @@ local TOK = 856
 -- local SSM = 860
 local DWG = 935
 local name, myName, inInstance, instanceType, Path, Size, Flags 
-local IsInInstance = IsInInstance
-local GetBattlefieldScore, GetBattlefieldStatInfo, GetBattlefieldStatData, GetBattlefieldTeamInfo = GetBattlefieldScore, GetBattlefieldStatInfo, GetBattlefieldStatData, GetBattlefieldTeamInfo
-local NormText = "Interface/Buttons/UI-Panel-Button-Up"
-local HighText = "Interface/Buttons/UI-Panel-Button-Highlight"
-local InProcessText = "|cffff8800"..WINTERGRASP_IN_PROGRESS.."|r"
-local tostring = tostring
 
 function SBGS:CreateFrame()
 	Holder:SetSize(400, 280)
@@ -43,6 +55,13 @@ function SBGS:CreateFrame()
 	Holder.shown = false
 	Holder:SetScript("OnShow", SBGS.OnShow)
 	Holder:SetScript("OnHide", SBGS.OnHide)
+
+	Holder.model = CreateFrame("PlayerModel", "SBGSModel", Holder);
+	Holder.playerFaction = Holder:CreateTexture(nil, 'ARTWORK')
+	Holder.button = CreateFrame("Button", "SBGSShowAllButton", Holder)
+	Holder.leave = CreateFrame("Button", "SBGSLeaveButton", Holder)
+	Holder.close = CreateFrame("Button", "SBGSCloseButton", Holder, "UIPanelButtonTemplate")
+	local button, model, playerFaction, leave, close = Holder.button, Holder.model, Holder.playerFaction, Holder.leave, Holder.close
 
 	Holder:SetBackdrop(BS)
 	Holder:SetBackdropColor(0, 0, 0, 1)
@@ -56,39 +75,39 @@ function SBGS:CreateFrame()
 	button:SetSize(110, 20)
 	button:SetPoint("BOTTOMLEFT", model, "BOTTOMRIGHT", 4, 4)
 	button.pushed = false
-	button:SetScript("OnClick", function() button.pushed = true; ShowUIPanel(WorldStateScoreFrame); SBGSHolder:Hide() end)
+	button:SetScript("OnClick", function() button.pushed = true; ShowUIPanel(WorldStateScoreFrame); Holder:Hide() end)
 
-	local bntex = button:CreateTexture()
-	bntex:SetTexture(NormText)
-	bntex:SetTexCoord(0, 0.625, 0, 0.6875)
-	bntex:SetAllPoints()	
-	button:SetNormalTexture(bntex)
+	button.NormTex = button:CreateTexture()
+	button.NormTex:SetTexture(NormText)
+	button.NormTex:SetTexCoord(0, 0.625, 0, 0.6875)
+	button.NormTex:SetAllPoints()
+	button:SetNormalTexture(button.NormTex)
 
-	local bhtex = button:CreateTexture()
-	bhtex:SetTexture(HighText)
-	bhtex:SetTexCoord(0, 0.625, 0, 0.6875)
-	bhtex:SetAllPoints()
-	button:SetHighlightTexture(bhtex)
+	button.HighTex = button:CreateTexture()
+	button.HighTex:SetTexture(HighText)
+	button.HighTex:SetTexCoord(0, 0.625, 0, 0.6875)
+	button.HighTex:SetAllPoints()
+	button:SetHighlightTexture(button.HighTex)
 
 	leave:SetSize(130, 20)
 	leave:SetPoint("LEFT", button, "RIGHT", 0, 0)
 	leave:SetScript("OnClick", function() ConfirmOrLeaveBattlefield() end)
 
-	local lntex = leave:CreateTexture()
-	lntex:SetTexture(NormText)
-	lntex:SetTexCoord(0, 0.625, 0, 0.6875)
-	lntex:SetAllPoints()	
-	leave:SetNormalTexture(lntex)
+	leave.NormTex = leave:CreateTexture()
+	leave.NormTex:SetTexture(NormText)
+	leave.NormTex:SetTexCoord(0, 0.625, 0, 0.6875)
+	leave.NormTex:SetAllPoints()	
+	leave:SetNormalTexture(leave.NormTex)
 
-	local lhtex = leave:CreateTexture()
-	lhtex:SetTexture(HighText)
-	lhtex:SetTexCoord(0, 0.625, 0, 0.6875)
-	lhtex:SetAllPoints()
-	leave:SetHighlightTexture(lhtex)
+	leave.HighTex = leave:CreateTexture()
+	leave.HighTex:SetTexture(HighText)
+	leave.HighTex:SetTexCoord(0, 0.625, 0, 0.6875)
+	leave.HighTex:SetAllPoints()
+	leave:SetHighlightTexture(leave.HighTex)
 
 	close:SetSize(18, 18)
 	close:SetPoint("TOPRIGHT", Holder, "TOPRIGHT", -4, -4)
-	close:SetScript("OnClick", function() button.pushed = false; SBGSHolder:Hide() end)
+	close:SetScript("OnClick", function() button.pushed = false; Holder:Hide() end)
 
 	if ElvUI then
 		Holder:StripTextures()
@@ -110,7 +129,7 @@ function SBGS:CreateFrame()
 end
 
 function SBGS:AnimFinished(anim)
-	model:SetAnimation(anim)
+	Holder.model:SetAnimation(anim)
 end
 
 function SBGS:OnEvent()
@@ -135,21 +154,21 @@ function SBGS:OnShow()
 	local anim = 47
 	if isArena then
 		anim = 113
-		playerFaction:SetTexture("Interface\\PVPFrame\\PvpBg-NagrandArena-ToastBG")
+		Holder.playerFaction:SetTexture("Interface\\PVPFrame\\PvpBg-NagrandArena-ToastBG")
 	else
-		playerFaction:SetTexture("Interface\\LFGFrame\\UI-PVP-BACKGROUND-"..FactionToken)
+		Holder.playerFaction:SetTexture("Interface\\LFGFrame\\UI-PVP-BACKGROUND-"..FactionToken)
 		if winner == 0 then
 			anim = FactionToken == "Horde" and 68 or 77
 		elseif winner == 1 then
 			anim = FactionToken == "Alliance" and 68 or 77
 		end
 	end
-	playerFaction:SetAlpha(0.5)
+	Holder.playerFaction:SetAlpha(0.5)
 	
-	model:SetUnit('player')
-	model:SetAnimation(anim)
-	model:SetPosition(0.2, 0, -0.2) --(pos/neg) first number moves closer/farther, second right/left, third up/down
-	model:SetScript("OnAnimFinished", function() SBGS:AnimFinished(anim) end)
+	Holder.model:SetUnit('player')
+	Holder.model:SetAnimation(anim)
+	Holder.model:SetPosition(0.2, 0, -0.2) --(pos/neg) first number moves closer/farther, second right/left, third up/down
+	Holder.model:SetScript("OnAnimFinished", function() SBGS:AnimFinished(anim) end)
 
 	SBGS:SetTexts(winner, isArena, isRegistered)
 	Holder.shown = true
@@ -161,7 +180,7 @@ end
 
 function SBGS:SetTexts(winner, isArena, isRegistered)
 	for i = 1, 22 do
-		_G["SBGSText"..i].text:SetText("")
+		Holder["String"..i].text:SetText("")
 	end
 
 	if isArena then
@@ -174,106 +193,106 @@ end
 function SBGS:SetTextBG(winner)
 	local CurrentMapID = GetCurrentMapAreaID()
 	--Winner text
-	SBGSText1.text:SetText(STATUS..":")
-	SBGSText12.text:SetText(winner == 0 and RED_FONT_COLOR_CODE..VICTORY_TEXT0.."|r" or winner == 1 and "|cff0070dd"..VICTORY_TEXT1.."|r" or InProcessText)
+	Holder.String1.text:SetText(STATUS..":")
+	Holder.String12.text:SetText(winner == 0 and RED_FONT_COLOR_CODE..VICTORY_TEXT0.."|r" or winner == 1 and "|cff0070dd"..VICTORY_TEXT1.."|r" or InProcessText)
 	--Stats labels
-	SBGSText2.text:SetText(HONORABLE_KILLS..":")
-	SBGSText3.text:SetText(KILLING_BLOWS..":")
-	SBGSText4.text:SetText(DEATHS..":")
-	SBGSText5.text:SetText(DAMAGE..":")
-	SBGSText6.text:SetText(SHOW_COMBAT_HEALING..":")
-	SBGSText7.text:SetText(HONOR..":")
+	Holder.String2.text:SetText(HONORABLE_KILLS..":")
+	Holder.String3.text:SetText(KILLING_BLOWS..":")
+	Holder.String4.text:SetText(DEATHS..":")
+	Holder.String5.text:SetText(DAMAGE..":")
+	Holder.String6.text:SetText(SHOW_COMBAT_HEALING..":")
+	Holder.String7.text:SetText(HONOR..":")
 	for index=1, GetNumBattlefieldScores() do
 		name = GetBattlefieldScore(index)
 		if name == myName then
-				SBGSText13.text:SetText(select(3, GetBattlefieldScore(index))) --Honor kills
-				SBGSText14.text:SetText(select(2, GetBattlefieldScore(index))) --Killing blows
-				SBGSText15.text:SetText(select(4, GetBattlefieldScore(index))) --Deathes
-				SBGSText16.text:SetText(SBGS:Comma(select(10, GetBattlefieldScore(index)))) --Damage
-				SBGSText17.text:SetText(SBGS:Comma(select(11, GetBattlefieldScore(index)))) --Healing
-				SBGSText18.text:SetText(select(5, GetBattlefieldScore(index))) --Honor
+				Holder.String13.text:SetText(select(3, GetBattlefieldScore(index))) --Honor kills
+				Holder.String14.text:SetText(select(2, GetBattlefieldScore(index))) --Killing blows
+				Holder.String15.text:SetText(select(4, GetBattlefieldScore(index))) --Deathes
+				Holder.String16.text:SetText(SBGS:Comma(select(10, GetBattlefieldScore(index)))) --Damage
+				Holder.String17.text:SetText(SBGS:Comma(select(11, GetBattlefieldScore(index)))) --Healing
+				Holder.String18.text:SetText(select(5, GetBattlefieldScore(index))) --Honor
 				--Mechanics texts
-				SBGSText8.text:SetText(GetBattlefieldStatInfo(1)..":")
-				SBGSText19.text:SetText(GetBattlefieldStatData(index, 1))
+				Holder.String8.text:SetText(GetBattlefieldStatInfo(1)..":")
+				Holder.String19.text:SetText(GetBattlefieldStatData(index, 1))
 			if CurrentMapID == WSG or CurrentMapID == TP then
-				SBGSText9.text:SetText(GetBattlefieldStatInfo(2)..":")
-				SBGSText20.text:SetText(GetBattlefieldStatData(index, 2))
+				Holder.String9.text:SetText(GetBattlefieldStatInfo(2)..":")
+				Holder.String20.text:SetText(GetBattlefieldStatData(index, 2))
 			-- elseif CurrentMapID == EOTS then
 			elseif CurrentMapID == AV then
-				SBGSText9.text:SetText(GetBattlefieldStatInfo(2)..":")
-				SBGSText10.text:SetText(GetBattlefieldStatInfo(3)..":")
-				SBGSText11.text:SetText(GetBattlefieldStatInfo(4)..":")
+				Holder.String9.text:SetText(GetBattlefieldStatInfo(2)..":")
+				Holder.String10.text:SetText(GetBattlefieldStatInfo(3)..":")
+				Holder.String11.text:SetText(GetBattlefieldStatInfo(4)..":")
 
-				SBGSText20.text:SetText(GetBattlefieldStatData(index, 2))
-				SBGSText21.text:SetText(GetBattlefieldStatData(index, 3))
-				SBGSText22.text:SetText(GetBattlefieldStatData(index, 4))
+				Holder.String20.text:SetText(GetBattlefieldStatData(index, 2))
+				Holder.String21.text:SetText(GetBattlefieldStatData(index, 3))
+				Holder.String22.text:SetText(GetBattlefieldStatData(index, 4))
 			elseif CurrentMapID == SOTA then
-				SBGSText9.text:SetText(GetBattlefieldStatInfo(2)..":")
-				SBGSText20.text:SetText(GetBattlefieldStatData(index, 2))
+				Holder.String9.text:SetText(GetBattlefieldStatInfo(2)..":")
+				Holder.String20.text:SetText(GetBattlefieldStatData(index, 2))
 			elseif CurrentMapID == IOC or CurrentMapID == TBFG or CurrentMapID == AB then
-				SBGSText9.text:SetText(GetBattlefieldStatInfo(2)..":")
-				SBGSText20.text:SetText(GetBattlefieldStatData(index, 2))
+				Holder.String9.text:SetText(GetBattlefieldStatInfo(2)..":")
+				Holder.String20.text:SetText(GetBattlefieldStatData(index, 2))
 			elseif CurrentMapID == TOK then
-				SBGSText9.text:SetText(GetBattlefieldStatInfo(2)..":")
-				SBGSText20.text:SetText(GetBattlefieldStatData(index, 2))
+				Holder.String9.text:SetText(GetBattlefieldStatInfo(2)..":")
+				Holder.String20.text:SetText(GetBattlefieldStatData(index, 2))
 			-- elseif CurrentMapID == SSM then
 			elseif CurrentMapID == DWG then
-				SBGSText9.text:SetText(GetBattlefieldStatInfo(2)..":")
-				SBGSText10.text:SetText(GetBattlefieldStatInfo(3)..":")
-				SBGSText11.text:SetText(GetBattlefieldStatInfo(4)..":")
+				Holder.String9.text:SetText(GetBattlefieldStatInfo(2)..":")
+				Holder.String10.text:SetText(GetBattlefieldStatInfo(3)..":")
+				Holder.String11.text:SetText(GetBattlefieldStatInfo(4)..":")
 
-				SBGSText20.text:SetText(GetBattlefieldStatData(index, 2))
-				SBGSText21.text:SetText(GetBattlefieldStatData(index, 3))
-				SBGSText22.text:SetText(GetBattlefieldStatData(index, 4))
+				Holder.String20.text:SetText(GetBattlefieldStatData(index, 2))
+				Holder.String21.text:SetText(GetBattlefieldStatData(index, 3))
+				Holder.String22.text:SetText(GetBattlefieldStatData(index, 4))
 			end
 			break
 		end
 	end
 
-	leave.text:SetText(LEAVE_BATTLEGROUND)
+	Holder.leave.text:SetText(LEAVE_BATTLEGROUND)
 end
 
 function SBGS:SetTextArena(winner, isRegistered)
 	-- local winner = GetBattlefieldWinner()
-	SBGSText1.text:SetText(STATUS..":")
+	Holder.String1.text:SetText(STATUS..":")
 	if winner then
 		if isRegistered then
 			if ( GetBattlefieldTeamInfo(winner) ) then
 				local teamName = winner == 0 and ARENA_TEAM_NAME_GREEN or ARENA_TEAM_NAME_GOLD
 				local text = format(VICTORY_TEXT_ARENA_WINS, teamName)
 				local color = winner == 0 and "|cffabd473" or "|cfffff569"
-				SBGSText12.text:SetText(color..text.."|r");
+				Holder.String12.text:SetText(color..text.."|r");
 			else
-				SBGSText12.text:SetText("|cffff8800"..VICTORY_TEXT_ARENA_DRAW.."|r");							
+				Holder.String12.text:SetText("|cffff8800"..VICTORY_TEXT_ARENA_DRAW.."|r");
 			end
 		else
-			SBGSText12.text:SetText(_G["VICTORY_TEXT_ARENA"..battlefieldWinner])
+			Holder.String12.text:SetText(_G["VICTORY_TEXT_ARENA"..winner])
 		end
 	else
-		SBGSText12.text:SetText(InProcessText)
+		Holder.String12.text:SetText(InProcessText)
 	end
 
-	SBGSText2.text:SetText(DAMAGE..":")
-	SBGSText3.text:SetText(SHOW_COMBAT_HEALING..":")
-	SBGSText4.text:SetText(KILLING_BLOWS..":")
-	SBGSText5.text:SetText(RATING_CHANGE..":")
+	Holder.String2.text:SetText(DAMAGE..":")
+	Holder.String3.text:SetText(SHOW_COMBAT_HEALING..":")
+	Holder.String4.text:SetText(KILLING_BLOWS..":")
+	Holder.String5.text:SetText(RATING_CHANGE..":")
 
 	for index=1, GetNumBattlefieldScores() do
 		name = GetBattlefieldScore(index)
 		if name == myName then
-			SBGSText13.text:SetText(SBGS:Comma(select(10, GetBattlefieldScore(index))))
-			SBGSText14.text:SetText(SBGS:Comma(select(11, GetBattlefieldScore(index))))
-			SBGSText15.text:SetText(select(2, GetBattlefieldScore(index)))
+			Holder.String13.text:SetText(SBGS:Comma(select(10, GetBattlefieldScore(index))))
+			Holder.String14.text:SetText(SBGS:Comma(select(11, GetBattlefieldScore(index))))
+			Holder.String15.text:SetText(select(2, GetBattlefieldScore(index)))
 			if isRegistered then
-				SBGSText16.text:SetText(select(13, GetBattlefieldScore(index)))
+				Holder.String16.text:SetText(select(13, GetBattlefieldScore(index)))
 			else
-				SBGSText16.text:SetText("0")
+				Holder.String16.text:SetText("0")
 			end
 			break
 		end
 	end
 
-	leave.text:SetText(LEAVE_ARENA)
+	Holder.leave.text:SetText(LEAVE_ARENA)
 end
 
 function SBGS:OnInitialize()
@@ -283,41 +302,42 @@ function SBGS:OnInitialize()
 
 	Path, Size, Flags = GameTooltipHeader:GetFont()
 
-	title = CreateFrame("Frame", "SBGSTitle", Holder)
-	title:SetSize(240, 20)
-	title:SetPoint("TOPRIGHT", Holder, "TOPRIGHT", -4, -4)
-	title.text = title:CreateFontString(nil, "OVERLAY")
-	title.text:SetPoint("CENTER", title, "CENTER", 0, 0)
-	title.text:SetFont(Path, 14, Flags)
-	title.text:SetText(format(STAT_TEMPLATE, myName))
+	Holder.Title = CreateFrame("Frame", "SBGSTitle", Holder)
+	Holder.Title:SetSize(240, 20)
+	Holder.Title:SetPoint("TOPRIGHT", Holder, "TOPRIGHT", -4, -4)
+	Holder.Title.text = Holder.Title:CreateFontString(nil, "OVERLAY")
+	Holder.Title.text:SetPoint("CENTER", Holder.Title, "CENTER", 0, 0)
+	Holder.Title.text:SetFont(Path, 14, Flags)
+	Holder.Title.text:SetText(format(STAT_TEMPLATE, myName))
 	for i = 1, 22 do
-		stat = CreateFrame("Frame", "SBGSText"..i, Holder)
+		Holder["String"..i] = CreateFrame("Frame", "SBGSString"..i, Holder)
 		if i == 1 then
-			stat:SetSize(80, 20)
+			Holder["String"..i]:SetSize(80, 20)
 		elseif i >= 1 and i < 12 then
-			stat:SetSize(140, 20)
+			Holder["String"..i]:SetSize(140, 20)
 		elseif i == 12 then
-			stat:SetSize(160, 20)
+			Holder["String"..i]:SetSize(160, 20)
 		else
-			stat:SetSize(100, 20)
+			Holder["String"..i]:SetSize(100, 20)
 		end
-		-- stat:CreateBackdrop()
+		-- Holder["String"..i]:CreateBackdrop()
 		if i == 1 then
-			stat:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -2)
+			Holder["String"..i]:SetPoint("TOPLEFT", Holder.Title, "BOTTOMLEFT", 0, -2)
 		elseif i == 12 then
-			stat:SetPoint("LEFT", "SBGSText1", "RIGHT", 2, 0)
+			Holder["String"..i]:SetPoint("LEFT", Holder.String1, "RIGHT", 2, 0)
 		elseif i == 2 then
-			stat:SetPoint("TOPLEFT", "SBGSText1", "BOTTOMLEFT", 0, 0)
+			Holder["String"..i]:SetPoint("TOPLEFT", Holder.String1, "BOTTOMLEFT", 0, 0)
 		elseif i == 13 then
-			stat:SetPoint("LEFT", "SBGSText2", "RIGHT", 2, 0)
+			Holder["String"..i]:SetPoint("LEFT", Holder.String2, "RIGHT", 2, 0)
 		else
-			stat:SetPoint("TOP", "SBGSText"..(i-1), "BOTTOM", 0, 0)
+			Holder["String"..i]:SetPoint("TOP", Holder["String"..(i-1)], "BOTTOM", 0, 0)
 		end
-		stat.text = stat:CreateFontString(nil, "OVERLAY")
-		stat.text:SetPoint("LEFT", stat, "LEFT", 2, 0)
-		stat.text:SetFont(Path, 12, Flags)
-		-- stat.text:SetText("Test text "..i)
+		Holder["String"..i].text = Holder["String"..i]:CreateFontString(nil, "OVERLAY")
+		Holder["String"..i].text:SetPoint("LEFT", Holder["String"..i], "LEFT", 2, 0)
+		Holder["String"..i].text:SetFont(Path, 12, Flags)
+		-- Holder["String"..i].text:SetText("Test text "..i)
 	end
+	local button, leave, close = Holder.button, Holder.leave, Holder.close
 
 	button.text = button:CreateFontString(nil, "OVERLAY")
 	button.text:SetPoint("CENTER", button, "CENTER", 0, 0)
@@ -338,15 +358,15 @@ function SBGS:OnInitialize()
 	WorldStateScoreFrame:HookScript("OnShow", function()
 		inInstance, instanceType = IsInInstance()
 		if not (inInstance and (instanceType == "pvp")) and not (inInstance and (instanceType == "arena")) then return end --Just in case
-		if not SBGSFullButton.pushed and not Holder.shown then
+		if not Holder.button.pushed and not Holder.shown then
 			HideUIPanel(WorldStateScoreFrame)
 			Holder:Show()
-		elseif not SBGSFullButton.pushed and Holder.shown then
+		elseif not Holder.button.pushed and Holder.shown then
 			HideUIPanel(WorldStateScoreFrame)
 			Holder:Hide()
 		end
 	end)
-	WorldStateScoreFrame:HookScript("OnHide", function() SBGSFullButton.pushed = false end)
+	WorldStateScoreFrame:HookScript("OnHide", function() Holder.button.pushed = false end)
 
 	self:RegisterEvent('UPDATE_BATTLEFIELD_SCORE', SBGS.OnEvent)
 	hooksecurefunc("LeaveBattlefield", function() Holder:Hide() end)
