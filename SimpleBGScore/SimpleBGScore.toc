@@ -1,9 +1,9 @@
-## Interface: 60200
+## Interface: 70000
 ## Title: Simple BG Score
 ## Notes: A simplified battleground scoreboard
 ## Notes-ruRU: Упрощенная статитика поля боя
 ## Author: Darth Predator
-## Version: 1.05
+## Version: 1.06
 ## OptionalDeps: ElvUI, Tukui
 ## X-Embeds: Ace3
 
