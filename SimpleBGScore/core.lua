@@ -1,6 +1,6 @@
 ﻿local SBGS = LibStub("AceAddon-3.0"):NewAddon("SimpleBGScore", "AceEvent-3.0") --, "AceHook-3.0")
 local AddOnName, Engine = ...;
-
+--GLOBALS: CreateFrame, hooksecurefunc, LibStub, UIParent
 local _G = _G
 
 local Holder = CreateFrame("Frame", "SBGSHolder", UIParent)
@@ -11,6 +11,7 @@ local UnitName = UnitName
 local ConfirmOrLeaveBattlefield = ConfirmOrLeaveBattlefield
 local GetBattlefieldWinner, IsActiveBattlefieldArena = GetBattlefieldWinner, IsActiveBattlefieldArena
 local GetCurrentMapAreaID = GetCurrentMapAreaID
+local RequestBattlefieldScoreData = RequestBattlefieldScoreData
 local IsInInstance = IsInInstance
 local GetNumBattlefieldScores, GetBattlefieldScore, GetBattlefieldStatInfo, GetBattlefieldStatData, GetBattlefieldTeamInfo = GetNumBattlefieldScores, GetBattlefieldScore, GetBattlefieldStatInfo, GetBattlefieldStatData, GetBattlefieldTeamInfo
 local select, format, tostring = select, format, tostring
@@ -75,7 +76,7 @@ function SBGS:CreateFrame()
 	button:SetSize(110, 20)
 	button:SetPoint("BOTTOMLEFT", model, "BOTTOMRIGHT", 4, 4)
 	button.pushed = false
-	button:SetScript("OnClick", function() button.pushed = true; ShowUIPanel(WorldStateScoreFrame); Holder:Hide() end)
+	button:SetScript("OnClick", function() button.pushed = true; ShowUIPanel(_G["WorldStateScoreFrame"]); Holder:Hide() end)
 
 	button.NormTex = button:CreateTexture()
 	button.NormTex:SetTexture(NormText)
@@ -109,15 +110,16 @@ function SBGS:CreateFrame()
 	close:SetPoint("TOPRIGHT", Holder, "TOPRIGHT", -4, -4)
 	close:SetScript("OnClick", function() button.pushed = false; Holder:Hide() end)
 
-	if ElvUI then
+	if _G["ElvUI"] then
+		local E = _G["ElvUI"][1]
 		Holder:StripTextures()
 		Holder:SetTemplate("Transparent")
-		ElvUI[1]:GetModule("Skins"):HandleButton(button)
-		ElvUI[1]:GetModule("Skins"):HandleButton(leave)
-		ElvUI[1]:GetModule("Skins"):HandleButton(close)
+		E:GetModule("Skins"):HandleButton(button)
+		E:GetModule("Skins"):HandleButton(leave)
+		E:GetModule("Skins"):HandleButton(close)
 		playerFaction:SetPoint("BOTTOMRIGHT", Holder,"BOTTOMRIGHT", -2, 2)
 		playerFaction:SetPoint("TOPLEFT", Holder,"TOPLEFT", 2, -2)
-	elseif Tukui then
+	elseif _G["Tukui"] then
 		Holder:StripTextures()
 		Holder:SetTemplate("Transparent")
 		button:SkinButton()
@@ -300,7 +302,7 @@ function SBGS:OnInitialize()
 
 	myName = UnitName('player')
 
-	Path, Size, Flags = GameTooltipHeader:GetFont()
+	Path, Size, Flags = _G["GameTooltipHeader"]:GetFont()
 
 	Holder.Title = CreateFrame("Frame", "SBGSTitle", Holder)
 	Holder.Title:SetSize(240, 20)
@@ -355,20 +357,27 @@ function SBGS:OnInitialize()
 	close.text:SetText("X")
 
 	--Hook stuff
-	WorldStateScoreFrame:HookScript("OnShow", function()
+	_G["WorldStateScoreFrame"]:HookScript("OnShow", function()
 		inInstance, instanceType = IsInInstance()
 		if not (inInstance and (instanceType == "pvp")) and not (inInstance and (instanceType == "arena")) then return end --Just in case
 		if not Holder.button.pushed and not Holder.shown then
-			HideUIPanel(WorldStateScoreFrame)
+			HideUIPanel(_G["WorldStateScoreFrame"])
 			Holder:Show()
 		elseif not Holder.button.pushed and Holder.shown then
-			HideUIPanel(WorldStateScoreFrame)
+			HideUIPanel(_G["WorldStateScoreFrame"])
 			Holder:Hide()
 		end
 	end)
-	WorldStateScoreFrame:HookScript("OnHide", function() Holder.button.pushed = false end)
+	_G["WorldStateScoreFrame"]:HookScript("OnHide", function() Holder.button.pushed = false end)
 
 	self:RegisterEvent('UPDATE_BATTLEFIELD_SCORE', SBGS.OnEvent)
+	self:RegisterEvent('PLAYER_ENTERING_WORLD', function()
+		SBGS:OnHide()
+		inInstance, instanceType = IsInInstance()
+		if (inInstance and (instanceType == "pvp")) or (inInstance and (instanceType == "arena")) then
+			RequestBattlefieldScoreData()
+		end
+	end)
 	hooksecurefunc("LeaveBattlefield", function() Holder:Hide() end)
 
 	--Enabling dragging around
@@ -385,7 +394,7 @@ function SBGS:OnInitialize()
 	end)
 
 	--Registe to plugin list in ElvUI
-	if ElvUI then
+	if _G["ElvUI"] then
 		local EP = LibStub("LibElvUIPlugin-1.0")
 		EP:RegisterPlugin(AddOnName)
 	end
