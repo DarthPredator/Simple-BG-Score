@@ -34,6 +34,12 @@ local BS = {
     insets = { left = 3, right = 3, top = 3, bottom = 3, },
 }
 
+local BSbar = {
+    bgFile   = "Interface\\Tooltips\\UI-Tooltip-Background", tile = true, tileSize = 1,
+    edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border", edgeSize = 1,
+    insets = { left = 0, right = 0, top = 0, bottom = 0, },
+}
+
 local FactionToken, Faction = UnitFactionGroup("player")
 local WSG = 443
 local TP = 626
@@ -48,6 +54,15 @@ local TOK = 856
 local DWG = 935
 local name, myName, inInstance, instanceType, Path, Size, Flags 
 
+function SBGS:SetRewardInfo()
+	local rewardInfo = PVPHonorSystem_GetNextReward()
+	if (rewardInfo) then
+		GameTooltip:SetOwner(Holder.reward, "ANCHOR_RIGHT")
+		if (rewardInfo:SetTooltip()) then GameTooltip:Show() end
+		-- for k,v in pairs(rewardInfo) do print(k,v) end
+	end
+end
+
 function SBGS:CreateFrame()
 	Holder:SetSize(400, 280)
 	Holder:SetPoint("CENTER", UIParent, "CENTER", 0, 150)
@@ -58,11 +73,16 @@ function SBGS:CreateFrame()
 	Holder:SetScript("OnHide", SBGS.OnHide)
 
 	Holder.model = CreateFrame("PlayerModel", "SBGSModel", Holder);
+	Holder.model:SetUnit('player')
 	Holder.playerFaction = Holder:CreateTexture(nil, 'ARTWORK')
 	Holder.button = CreateFrame("Button", "SBGSShowAllButton", Holder)
 	Holder.leave = CreateFrame("Button", "SBGSLeaveButton", Holder)
 	Holder.close = CreateFrame("Button", "SBGSCloseButton", Holder, "UIPanelButtonTemplate")
-	local button, model, playerFaction, leave, close = Holder.button, Holder.model, Holder.playerFaction, Holder.leave, Holder.close
+	Holder.bar = CreateFrame("StatusBar", "SBGSHonorBar", Holder, "AnimatedStatusBarTemplate")
+	Holder.level = CreateFrame("Frame", "SBGSHonorLevel", Holder)
+	Holder.prestige = CreateFrame("Frame", "SBGSPrestigeLevel", Holder)
+	Holder.reward = CreateFrame("Frame", "SBGSReward", Holder)
+	local button, model, playerFaction, leave, close, bar, level, prestige, reward = Holder.button, Holder.model, Holder.playerFaction, Holder.leave, Holder.close, Holder.bar, Holder.level, Holder.prestige, Holder.reward
 
 	Holder:SetBackdrop(BS)
 	Holder:SetBackdropColor(0, 0, 0, 1)
@@ -97,7 +117,7 @@ function SBGS:CreateFrame()
 	leave.NormTex = leave:CreateTexture()
 	leave.NormTex:SetTexture(NormText)
 	leave.NormTex:SetTexCoord(0, 0.625, 0, 0.6875)
-	leave.NormTex:SetAllPoints()	
+	leave.NormTex:SetAllPoints()
 	leave:SetNormalTexture(leave.NormTex)
 
 	leave.HighTex = leave:CreateTexture()
@@ -110,6 +130,38 @@ function SBGS:CreateFrame()
 	close:SetPoint("TOPRIGHT", Holder, "TOPRIGHT", -4, -4)
 	close:SetScript("OnClick", function() button.pushed = false; Holder:Hide() end)
 
+	bar:SetSize(100,14)
+	bar:SetPoint("BOTTOMLEFT", Holder, "BOTTOMLEFT", 20, 4)
+	bar:SetStatusBarTexture([[Interface\TargetingFrame\UI-StatusBar]])
+	bar:SetStatusBarColor(240/255, 114/255, 65/255)
+	bar:SetBackdrop(BSbar)
+	bar:SetBackdropColor(0,0,0)
+	bar:EnableMouse(false)
+	bar.SparkBurstMove:Height(3)
+	bar:SetFrameLevel(model:GetFrameLevel() + 3)
+	bar.text = bar:CreateFontString(nil, "OVERLAY")
+
+	level:SetSize(15,15)
+	level:SetPoint("RIGHT", bar, "LEFT", -2, 0)
+	level:SetFrameLevel(model:GetFrameLevel() + 3)
+	level.text = level:CreateFontString(nil, "OVERLAY")
+
+	reward:SetSize(24,24)
+	reward:SetPoint("BOTTOMLEFT", bar, "BOTTOMRIGHT", 4, 0)
+	reward:SetFrameLevel(model:GetFrameLevel() + 3)
+	reward:SetScript("OnEnter", function() SBGS:SetRewardInfo() end)
+	reward:SetScript("OnLeave", GameTooltip_Hide)
+	reward.texture = reward:CreateTexture(il, "OVERLAY")
+	reward.texture:SetAllPoints()
+	
+	prestige:SetSize(34, 34)
+	prestige:SetPoint("BOTTOM", reward, "TOP", 0, 4)
+	prestige.text = prestige:CreateFontString(nil, "OVERLAY")
+	prestige.texture = prestige:CreateTexture(nil, "OVERLAY")
+	prestige.texture:SetAllPoints()
+	prestige.texture:SetTexture([[Interface\ACHIEVEMENTFRAME\UI-ACHIEVEMENT-SHIELDS]])
+	prestige.texture:SetTexCoord(0, 0.5, 0.5, 1)
+
 	if _G["ElvUI"] then
 		local E = _G["ElvUI"][1]
 		Holder:StripTextures()
@@ -117,14 +169,21 @@ function SBGS:CreateFrame()
 		E:GetModule("Skins"):HandleButton(button)
 		E:GetModule("Skins"):HandleButton(leave)
 		E:GetModule("Skins"):HandleButton(close)
+		bar:SetStatusBarTexture(E["media"].normTex)
+		bar:CreateBackdrop("Transparent")
+		level:SetPoint("RIGHT", bar, "LEFT", -4, 0)
 		playerFaction:SetPoint("BOTTOMRIGHT", Holder,"BOTTOMRIGHT", -2, 2)
 		playerFaction:SetPoint("TOPLEFT", Holder,"TOPLEFT", 2, -2)
 	elseif _G["Tukui"] then
+		local C = _G["Tukui"][2]
 		Holder:StripTextures()
 		Holder:SetTemplate("Transparent")
 		button:SkinButton()
 		leave:SkinButton()
 		close:SkinButton()
+		bar:SetStatusBarTexture(C.Medias.Normal)
+		bar:CreateBackdrop("Transparent")
+		level:SetPoint("RIGHT", bar, "LEFT", -4, 0)
 		playerFaction:SetPoint("BOTTOMRIGHT", Holder,"BOTTOMRIGHT", -2, 2)
 		playerFaction:SetPoint("TOPLEFT", Holder,"TOPLEFT", 2, -2)
 	end
@@ -150,6 +209,51 @@ function SBGS:Comma(str)
 	end
 end
 
+function SBGS:UpdateHonor(event, unit)
+	if event == "HONOR_PRESTIGE_UPDATE" and unit ~= "player" then return end
+	if event == "HONOR_LEVEL_UPDATE" and unit ~= "player" then return end
+	local current = UnitHonor("player");
+	local max = UnitHonorMax("player");
+	local level = UnitHonorLevel("player");
+	local rewardInfo = PVPHonorSystem_GetNextReward()
+
+	Holder.bar:SetMinMaxValues(0, max)
+	Holder.bar:SetValue(current)
+	Holder.bar.text:SetText(current.."/"..max)
+	Holder.level.text:SetText(level)
+	Holder.reward.texture:SetTexture(rewardInfo.icon)
+end
+
+local WinTable = {
+	[0] = {
+		["Alliance"] = 77,
+		["Horde"] = 68,
+		["teamName"] = ARENA_TEAM_NAME_GREEN,
+		["color"] = "|cffabd473",
+	},
+	[1] = {
+		["Alliance"] = 68,
+		["Horde"] = 77,
+		["teamName"] = ARENA_TEAM_NAME_GOLD,
+		["color"] = "|cfffff569",
+	},
+}
+
+function SBGS:UpdateHonorBar()
+	local current = UnitHonor("player");
+	local max = UnitHonorMax("player");
+	local level = UnitHonorLevel("player");
+	local prestige = UnitPrestige("player")
+	local ShowPrestige = prestige > 0 and true or false
+
+	Holder.bar:SetAnimatedValues(current, 0, max, level)
+	Holder.bar.text:SetText(current.." / "..max)
+	Holder.prestige.text:SetText(prestige)
+	Holder.level.text:SetText(level)
+	if ShowPrestige then Holder.prestige:Show() else Holder.prestige:Hide() end
+
+end
+
 function SBGS:OnShow()
 	local winner = GetBattlefieldWinner()
 	local isArena, isRegistered = IsActiveBattlefieldArena()
@@ -159,20 +263,22 @@ function SBGS:OnShow()
 		Holder.playerFaction:SetTexture("Interface\\PVPFrame\\PvpBg-NagrandArena-ToastBG")
 	else
 		Holder.playerFaction:SetTexture("Interface\\LFGFrame\\UI-PVP-BACKGROUND-"..FactionToken)
-		if winner == 0 then
-			anim = FactionToken == "Horde" and 68 or 77
-		elseif winner == 1 then
-			anim = FactionToken == "Alliance" and 68 or 77
-		end
+
+		if winner then anim = WinTable[winner][FactionToken] end
 	end
 	Holder.playerFaction:SetAlpha(0.5)
-	
+
 	Holder.model:SetUnit('player')
 	Holder.model:SetAnimation(anim)
 	Holder.model:SetPosition(0.2, 0, -0.2) --(pos/neg) first number moves closer/farther, second right/left, third up/down
 	Holder.model:SetScript("OnAnimFinished", function() SBGS:AnimFinished(anim) end)
+	Holder.model:Show()
 
 	SBGS:SetTexts(winner, isArena, isRegistered)
+
+	SBGS:UpdateHonorBar()
+	local rewardInfo = PVPHonorSystem_GetNextReward()
+	Holder.reward.texture:SetTexture(rewardInfo.icon)
 	Holder.shown = true
 end
 
@@ -207,45 +313,47 @@ function SBGS:SetTextBG(winner)
 	for index=1, GetNumBattlefieldScores() do
 		name = GetBattlefieldScore(index)
 		if name == myName then
-				Holder.String13.text:SetText(select(3, GetBattlefieldScore(index))) --Honor kills
-				Holder.String14.text:SetText(select(2, GetBattlefieldScore(index))) --Killing blows
-				Holder.String15.text:SetText(select(4, GetBattlefieldScore(index))) --Deathes
-				Holder.String16.text:SetText(SBGS:Comma(select(10, GetBattlefieldScore(index)))) --Damage
-				Holder.String17.text:SetText(SBGS:Comma(select(11, GetBattlefieldScore(index)))) --Healing
-				Holder.String18.text:SetText(select(5, GetBattlefieldScore(index))) --Honor
-				--Mechanics texts
+			Holder.String13.text:SetText(select(3, GetBattlefieldScore(index))) --Honor kills
+			Holder.String14.text:SetText(select(2, GetBattlefieldScore(index))) --Killing blows
+			Holder.String15.text:SetText(select(4, GetBattlefieldScore(index))) --Deathes
+			Holder.String16.text:SetText(SBGS:Comma(select(10, GetBattlefieldScore(index)))) --Damage
+			Holder.String17.text:SetText(SBGS:Comma(select(11, GetBattlefieldScore(index)))) --Healing
+			Holder.String18.text:SetText(select(5, GetBattlefieldScore(index))) --Honor
+			--Mechanics texts
+			if GetBattlefieldStatInfo(1) then
 				Holder.String8.text:SetText(GetBattlefieldStatInfo(1)..":")
 				Holder.String19.text:SetText(GetBattlefieldStatData(index, 1))
-			if CurrentMapID == WSG or CurrentMapID == TP then
-				Holder.String9.text:SetText(GetBattlefieldStatInfo(2)..":")
-				Holder.String20.text:SetText(GetBattlefieldStatData(index, 2))
-			-- elseif CurrentMapID == EOTS then
-			elseif CurrentMapID == AV then
-				Holder.String9.text:SetText(GetBattlefieldStatInfo(2)..":")
-				Holder.String10.text:SetText(GetBattlefieldStatInfo(3)..":")
-				Holder.String11.text:SetText(GetBattlefieldStatInfo(4)..":")
+				if CurrentMapID == WSG or CurrentMapID == TP then
+					Holder.String9.text:SetText(GetBattlefieldStatInfo(2)..":")
+					Holder.String20.text:SetText(GetBattlefieldStatData(index, 2))
+				-- elseif CurrentMapID == EOTS then
+				elseif CurrentMapID == AV then
+					Holder.String9.text:SetText(GetBattlefieldStatInfo(2)..":")
+					Holder.String10.text:SetText(GetBattlefieldStatInfo(3)..":")
+					Holder.String11.text:SetText(GetBattlefieldStatInfo(4)..":")
 
-				Holder.String20.text:SetText(GetBattlefieldStatData(index, 2))
-				Holder.String21.text:SetText(GetBattlefieldStatData(index, 3))
-				Holder.String22.text:SetText(GetBattlefieldStatData(index, 4))
-			elseif CurrentMapID == SOTA then
-				Holder.String9.text:SetText(GetBattlefieldStatInfo(2)..":")
-				Holder.String20.text:SetText(GetBattlefieldStatData(index, 2))
-			elseif CurrentMapID == IOC or CurrentMapID == TBFG or CurrentMapID == AB then
-				Holder.String9.text:SetText(GetBattlefieldStatInfo(2)..":")
-				Holder.String20.text:SetText(GetBattlefieldStatData(index, 2))
-			elseif CurrentMapID == TOK then
-				Holder.String9.text:SetText(GetBattlefieldStatInfo(2)..":")
-				Holder.String20.text:SetText(GetBattlefieldStatData(index, 2))
-			-- elseif CurrentMapID == SSM then
-			elseif CurrentMapID == DWG then
-				Holder.String9.text:SetText(GetBattlefieldStatInfo(2)..":")
-				Holder.String10.text:SetText(GetBattlefieldStatInfo(3)..":")
-				Holder.String11.text:SetText(GetBattlefieldStatInfo(4)..":")
+					Holder.String20.text:SetText(GetBattlefieldStatData(index, 2))
+					Holder.String21.text:SetText(GetBattlefieldStatData(index, 3))
+					Holder.String22.text:SetText(GetBattlefieldStatData(index, 4))
+				elseif CurrentMapID == SOTA then
+					Holder.String9.text:SetText(GetBattlefieldStatInfo(2)..":")
+					Holder.String20.text:SetText(GetBattlefieldStatData(index, 2))
+				elseif CurrentMapID == IOC or CurrentMapID == TBFG or CurrentMapID == AB then
+					Holder.String9.text:SetText(GetBattlefieldStatInfo(2)..":")
+					Holder.String20.text:SetText(GetBattlefieldStatData(index, 2))
+				elseif CurrentMapID == TOK then
+					Holder.String9.text:SetText(GetBattlefieldStatInfo(2)..":")
+					Holder.String20.text:SetText(GetBattlefieldStatData(index, 2))
+				-- elseif CurrentMapID == SSM then
+				elseif CurrentMapID == DWG then
+					Holder.String9.text:SetText(GetBattlefieldStatInfo(2)..":")
+					Holder.String10.text:SetText(GetBattlefieldStatInfo(3)..":")
+					Holder.String11.text:SetText(GetBattlefieldStatInfo(4)..":")
 
-				Holder.String20.text:SetText(GetBattlefieldStatData(index, 2))
-				Holder.String21.text:SetText(GetBattlefieldStatData(index, 3))
-				Holder.String22.text:SetText(GetBattlefieldStatData(index, 4))
+					Holder.String20.text:SetText(GetBattlefieldStatData(index, 2))
+					Holder.String21.text:SetText(GetBattlefieldStatData(index, 3))
+					Holder.String22.text:SetText(GetBattlefieldStatData(index, 4))
+				end
 			end
 			break
 		end
@@ -260,9 +368,11 @@ function SBGS:SetTextArena(winner, isRegistered)
 	if winner then
 		if isRegistered then
 			if ( GetBattlefieldTeamInfo(winner) ) then
-				local teamName = winner == 0 and ARENA_TEAM_NAME_GREEN or ARENA_TEAM_NAME_GOLD
+				-- local teamName = winner == 0 and ARENA_TEAM_NAME_GREEN or ARENA_TEAM_NAME_GOLD
+				local teamName = WinTable[winner].teamName
 				local text = format(VICTORY_TEXT_ARENA_WINS, teamName)
-				local color = winner == 0 and "|cffabd473" or "|cfffff569"
+				-- local color = winner == 0 and "|cffabd473" or "|cfffff569"
+				local color = WinTable[winner].color
 				Holder.String12.text:SetText(color..text.."|r");
 			else
 				Holder.String12.text:SetText("|cffff8800"..VICTORY_TEXT_ARENA_DRAW.."|r");
@@ -339,7 +449,7 @@ function SBGS:OnInitialize()
 		Holder["String"..i].text:SetFont(Path, 12, Flags)
 		-- Holder["String"..i].text:SetText("Test text "..i)
 	end
-	local button, leave, close = Holder.button, Holder.leave, Holder.close
+	local button, leave, close, level, bar, prestige = Holder.button, Holder.leave, Holder.close, Holder.level, Holder.bar, Holder.prestige
 
 	button.text = button:CreateFontString(nil, "OVERLAY")
 	button.text:SetPoint("CENTER", button, "CENTER", 0, 0)
@@ -356,6 +466,18 @@ function SBGS:OnInitialize()
 	close.text:SetFont(Path, 10, Flags)
 	close.text:SetText("X")
 
+	bar.text:SetPoint("LEFT", bar, "LEFT", 2, 0)
+	bar.text:SetFont(Path, 12, "OUTLINE")
+	
+	prestige.text:SetPoint("CENTER", prestige, "CENTER")
+	prestige.text:SetFont(Path, 14, "OUTLINE")
+
+	level.text:SetPoint("LEFT", level, "LEFT", 2, 0)
+	level.text:SetFont(Path, 12, Flags)
+	-- level.text:SetText("16")
+
+	SBGS:UpdateHonorBar()
+	
 	--Hook stuff
 	_G["WorldStateScoreFrame"]:HookScript("OnShow", function()
 		inInstance, instanceType = IsInInstance()
@@ -379,6 +501,10 @@ function SBGS:OnInitialize()
 		end
 	end)
 	hooksecurefunc("LeaveBattlefield", function() Holder:Hide() end)
+
+	self:RegisterEvent("HONOR_XP_UPDATE", "UpdateHonor")
+	self:RegisterEvent("HONOR_LEVEL_UPDATE", "UpdateHonor")
+	self:RegisterEvent("HONOR_PRESTIGE_UPDATE", "UpdateHonor")
 
 	--Enabling dragging around
 	Holder:EnableMouse(true)
