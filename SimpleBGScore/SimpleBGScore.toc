@@ -1,15 +1,11 @@
-## Interface: 70000
+## Interface: 80000
 ## Title: Simple BG Score
 ## Notes: A simplified battleground scoreboard
 ## Notes-ruRU: Упрощенная статитика поля боя
 ## Author: Darth Predator
-## Version: 1.06
+## Version: 1.07
 ## OptionalDeps: ElvUI, Tukui
 ## X-Embeds: Ace3
 
 libs/load_libs.xml
 core.lua
- 
- 
-## X-Tukui-ProjectID: 263
-## X-Tukui-ProjectFolders: SimpleBGScore
